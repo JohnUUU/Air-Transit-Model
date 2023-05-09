@@ -6,7 +6,8 @@ option max_tracelength 20
 sig Plane {
     var timeInFlight: lone Int, // Time that the plane has been in flight
     maxFlightTime: one Int, // Maximum amount of time that the plane can be in flight, e.g. due to fuel constraints
-    flying: lone Airport -> Airport // Whether or not the plane is Flying and if so from what SRC to DEST
+    flying: lone Airport -> Airport, // Whether or not the plane is Flying and if so from what SRC to DEST
+    location: lone Airport // Which Airport the Plane is currently at 
 }
 
 sig Runway {
@@ -15,9 +16,7 @@ sig Runway {
  }
 
 sig Airport {
-    runways : set Runway, // Runways in the Airport
-    var airplanes: set Plane, // Planes currently in the Airport
-    minFlightTime: set Airport -> Int, // Minimum amount of time to fly to Destination Airport, e.g. Travel distance 
+    minFlightTime: set Airport -> Int // Minimum amount of time to fly to Destination Airport, e.g. Travel distance 
 }
 
 pred wellFormed {
@@ -41,31 +40,38 @@ pred wellFormed {
         minft > 0
 
         // MinFlightTime of a Plane is always less than maxFlightTime 
-        minft < p.maxFlightTime
-    }
-
-
-    // The Runways and Airports must coincide 
-    all r : Runway | {
-        r in r.airport.runways
+        all p : Plane {
+             minft < p.maxFlightTime
+        }
     }
     
     // If a Plane is in a Runway it must be in the runway's Airport 
     all p : Plane | {
-        p in Runway.activeplanes => p in Runway.airport.airplanes
+        all r : Runway | {
+            p in r.activeplanes => p.location = r.airport
+        }
         some p.flying iff some p.timeInFlight
     }
+
+    // A plane cannot be in multiple runways 
+    all p: Plane | {
+        lone activeplanes.p
+    }
+
 }
 
 pred stationary[p : Plane] {
     // Plane is not currently in Flight 
-    p.inFlight = NotFlying
+    p not in flying.Airport.Airport
 
     // Plane is not currently in the runway 
     p not in Runway.activeplanes
 
     // timeInFlight is None 
     no p.timeInFlight 
+
+    // Plane is in an Airport 
+    one p.location
 }
 
 
@@ -75,17 +81,7 @@ pred init {
 
     // Runways start with no planes 
     no Runway.activeplanes
-
-    // Airports have at least 1 runway and no planes in flight
-    all a : Airport {
-        some a.runways
-    }
-    Plane.inFlight = NotFlying
-
-    // All Planes start in an airport 
-    all p : Plane | {
-        p in Airport.airplanes
-    }
+    no flying
 
     // Planes are in stationary mode
     all p: Plane {
@@ -93,25 +89,36 @@ pred init {
     }
 }
 
+pred someRunwayAvailable[p : Plane] {
+    some r : airport.(p.location) | {
+        no r.activeplanes
+    }
+}
 
-run { init } for exactly 6 Plane, exactly 4 Runway, exactly 2 Airport
+pred stationaryToTakeoff[p : Plane] {
 
-// pred someRunwayAvailable {
-//     // TODO: FIll out 
+    -- Guard 
+    // wellFormed
+    stationary[p] 
+    someRunwayAvailable[p]
+
+    -- Transition 
+    // Plane is still not in Flight 
+    p not in flying.Airport.Airport
     
-// }
+    // Plane is ready in the runway 
+    Runway.activeplanes' = Runway.activeplanes + p 
 
-// pred stationaryToTakeoff[p : Plane, r : Runway] {
-//     stationary[p] 
-//     available[r]
+    // timeinFlight is still None 
+    no p.timeInFlight 
 
-//     // Plane is still not in Flight 
-//     Airport.planesInFlight' =  Airport.planesInFlight
-    
-//     // Plane is ready in the runway 
-//     p.runway' = r 
-//     r.planes' = r.planes + p 
+    // Plane is in an Airport 
+    one p.location
+}
 
-//     // timeinFlight is still None 
-//     no p.timeInFlight'
-// }
+run { 
+    init 
+    some p : Plane {
+        next_state stationaryToTakeoff[p]
+    }
+} for exactly 6 Plane, exactly 4 Runway, exactly 2 Airport
