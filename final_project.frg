@@ -116,8 +116,13 @@ pred stationaryToTakeoff[p : Plane] {
     one p.location
 }
 
+pred traces{
+    init
+    always wellFormed
+}
+
 run { 
-    init 
+    traces
     some p : Plane {
         next_state stationaryToTakeoff[p]
     }
