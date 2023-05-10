@@ -120,12 +120,20 @@ pred stationaryToOnRunway[p : Plane] {
     one p.location
 }
 
-pred takeoffToFlying[p : Plane] {
+pred onRunwayToFlying[p : Plane] {
 
 }
 
-pred flyingToLanding[p : Plane] {
+pred flyingToOnRunway[p : Plane] {
 
+}
+
+pred onRunwayToStationary[p : Plane] {
+
+}
+
+pred doNothing[p: Plane]{
+    
 }
 
 
