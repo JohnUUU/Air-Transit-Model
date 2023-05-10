@@ -74,6 +74,10 @@ pred stationary[p : Plane] {
     one p.location
 }
 
+pred onRunway{}
+
+pred flying{}
+
 
 pred init {
     // Wellformedness 
@@ -95,7 +99,7 @@ pred someRunwayAvailable[p : Plane] {
     }
 }
 
-pred stationaryToTakeoff[p : Plane] {
+pred stationaryToOnRunway[p : Plane] {
 
     -- Guard 
     // wellFormed
@@ -116,14 +120,33 @@ pred stationaryToTakeoff[p : Plane] {
     one p.location
 }
 
+pred takeoffToFlying[p : Plane] {
+
+}
+
+pred flyingToLanding[p : Plane] {
+
+}
+
+
+
+pred noCrashes{
+
+    // at most one plane in a runway
+    all r : Runway {
+        lone r.activeplanes
+    }
+}
+
 pred traces{
     init
     always wellFormed
+    always noCrashes
 }
 
 run { 
     traces
     some p : Plane {
-        next_state stationaryToTakeoff[p]
+        next_state stationaryToOnRunway[p]
     }
 } for exactly 6 Plane, exactly 4 Runway, exactly 2 Airport
