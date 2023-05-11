@@ -1,13 +1,13 @@
 #lang forge "fp" "whbjcaydktq4qa5f@gmail.com"
 option problem_type temporal
-option min_tracelength 1
+option min_tracelength 3
 option max_tracelength 20
 
 sig Plane {
     var timeInFlight: lone Int, // Time that the plane has been in flight
     maxFlightTime: one Int, // Maximum amount of time that the plane can be in flight, e.g. due to fuel constraints
     flying: lone Airport -> Airport, // Whether or not the plane is Flying and if so from what SRC to DEST
-    location: lone Airport // Which Airport the Plane is currently at 
+    var location: lone Airport // Which Airport the Plane is currently at 
 }
 
 sig Runway {
@@ -58,6 +58,13 @@ pred wellFormed {
         lone activeplanes.p
     }
 
+    // An airport can only have 1 min flight time to all other airports 
+    all a1, a2 : Airport {
+        a1 != a2 => {
+            one a2.(a1.minFlightTime)
+        }
+    }
+
 }
 
 pred stationary[p : Plane] {
@@ -74,9 +81,35 @@ pred stationary[p : Plane] {
     one p.location
 }
 
-pred onRunway{}
+pred onRunway[p: Plane]{
+    // Plane is not currently in Flight 
+    p not in flying.Airport.Airport
 
-pred flying{}
+    // Plane is currently in the runway 
+    p in Runway.activeplanes
+
+    // timeInFlight is None 
+    no p.timeInFlight 
+
+    // Plane is in an Airport 
+    one p.location
+}
+
+pred inAir[p: Plane]{
+    // Plane is flying from src to dest 
+    some src, dest: Airport |  {
+        p.flying = src -> dest
+    }
+
+    // timeInFlight is active
+    some p.timeInFlight 
+
+    // Plane is not in an Airport 
+    no p.location
+
+    // Plane is not in a runway 
+    p not in Runway.activeplanes'
+}
 
 
 pred init {
@@ -93,8 +126,8 @@ pred init {
     }
 }
 
-pred someRunwayAvailable[p : Plane] {
-    some r : airport.(p.location) | {
+pred someRunwayAvailable[p : Plane, a : Airport] {
+    some r : airport.a | {
         no r.activeplanes
     }
 }
@@ -104,42 +137,137 @@ pred stationaryToOnRunway[p : Plane] {
     -- Guard 
     // wellFormed
     stationary[p] 
-    someRunwayAvailable[p]
+    someRunwayAvailable[p, p.location]
 
     -- Transition 
     // Plane is still not in Flight 
-    p not in flying.Airport.Airport
+    p not in flying.Airport.Airport'
     
     // Plane is ready in the runway 
-    Runway.activeplanes' = Runway.activeplanes + p 
+    some r : airport.(p.location) | {
+        no r.activeplanes
+        r.activeplanes' = r.activeplanes + p
+    }
 
     // timeinFlight is still None 
-    no p.timeInFlight 
+    no p.timeInFlight'
 
     // Plane is in an Airport 
-    one p.location
+    one p.location'
 }
 
-pred onRunwayToFlying[p : Plane] {
+pred onRunwayToInAir[p : Plane] {
+    -- Guard
+    onRunway[p]
 
+    -- Transition 
+    // // Plane flies from current Airport to some destination
+    // some dest: Airport |  {
+    //     p.flying' = p.location -> dest
+    // }
+    // p.timeInFlight' = 0
+
+    // Plane leaves the runway
+    p not in Runway.activeplanes'
+
+    // Plane leaves the airport
+    no p.location'
 }
 
-pred flyingToOnRunway[p : Plane] {
+pred readyToLand[p: Plane] {
+    some src, dest: Airport | {
+        p.flying = src -> dest
+        someRunwayAvailable[p, dest]
+        p.timeInFlight >= dest.(src.minFlightTime)
+    }
+}
 
+pred inAirToOnRunway[p : Plane] {
+    -- Guard 
+    inAir[p]
+    readyToLand[p]
+
+    -- Transition 
+    
+
+    // Plane enters the airport 
+    some src, dest: Airport | {
+        p.flying = src -> dest
+        p.location' = dest
+
+        // Plane enters the runway 
+        some r : airport.dest | {
+            no r.activeplanes
+            r.activeplanes' = r.activeplanes + p
+        }
+
+    }
+
+    // Plane stops flying 
+    p not in flying.Airport.Airport'
+    no p.timeInFlight'
 }
 
 pred onRunwayToStationary[p : Plane] {
+    -- Guard 
+    onRunway[p]
 
+    -- Transition 
+    
+    // Plane is still not in Flight 
+    p not in flying.Airport.Airport'
+    
+    // Plane leaves the runway
+    p not in Runway.activeplanes'
+
+    // timeinFlight is still None 
+    no p.timeInFlight'
+
+    // Plane is in an Airport 
+    one p.location'
+}
+
+pred keepInAir[p: Plane] {
+    // Plane stays in flight 
+    p.flying' = p.flying 
+
+    // Plane is still not in an airport
+    no p.location' 
+
+    // Plane does not enter a runway 
+    p not in Runway.activeplanes'
+
+    // Time in flight increments by 1
+    p.timeInFlight' = add[p.timeInFlight, 1]
+}
+
+pred keepInRunway[p: Plane] {
+    // Plane is not currently in Flight 
+    p not in flying.Airport.Airport'
+
+    // Plane stays in runway 
+    (activeplanes.p -> p) in activeplanes'
+
+    // timeInFlight is None 
+    no p.timeInFlight'
+
+    // Plane is in an Airport 
+    one p.location'
 }
 
 pred doNothing[p: Plane]{
-    
+    inAir[p] => {
+        keepInAir[p]
+    }
+    onRunway[p] => {
+        keepInRunway[p]
+    }
+    stationary[p] => {
+        next_state stationary[p]
+    }
 }
 
-
-
 pred noCrashes{
-
     // at most one plane in a runway
     all r : Runway {
         lone r.activeplanes
@@ -149,12 +277,12 @@ pred noCrashes{
 pred traces{
     init
     always wellFormed
-    always noCrashes
+    always noCrashes // Ideally try to replace this with some registration system maybe? 
+    always {all p: Plane | stationaryToOnRunway[p] or onRunwayToInAir[p] or inAirToOnRunway[p] or onRunwayToStationary[p] or doNothing[p]}
+    eventually {some p: Plane | onRunway[p]}
+    // eventually {some p: Plane | onRunwayToInAir[p]}
 }
 
 run { 
     traces
-    some p : Plane {
-        next_state stationaryToOnRunway[p]
-    }
-} for exactly 6 Plane, exactly 4 Runway, exactly 2 Airport
+} for exactly 6 Plane, exactly 4 Runway, exactly 2 Airport, 5 Int
