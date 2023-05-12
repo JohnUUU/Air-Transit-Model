@@ -150,10 +150,10 @@ pred stationaryToOnRunway[p : Plane] {
     }
 
     // timeinFlight is still None 
-    no p.timeInFlight'
+    p.timeInFlight' = p.timeInFlight
 
     // Plane is in an Airport 
-    one p.location'
+    p.location' = p.location
 }
 
 pred onRunwayToInAir[p : Plane] {
@@ -161,7 +161,7 @@ pred onRunwayToInAir[p : Plane] {
     onRunway[p]
 
     -- Transition 
-    // Plane flies from current Airport to some destination
+    //Plane flies from current Airport to some destination
     some dest: Airport |  {
         p.flying' = (p.location -> dest) 
     }
@@ -204,7 +204,7 @@ pred inAirToOnRunway[p : Plane] {
     }
 
     // Plane stops flying 
-    p not in flying.Airport.Airport'
+    no p.flying'
     no p.timeInFlight'
 }
 
@@ -252,7 +252,7 @@ pred keepInRunway[p: Plane] {
     no p.timeInFlight'
 
     // Plane is in an Airport 
-    one p.location'
+    p.location' = p.location
 }
 
 pred doNothing[p: Plane]{
@@ -278,9 +278,37 @@ pred traces{
     init
     always wellFormed
     always noCrashes // Ideally try to replace this with some registration system maybe? 
-    //always {all p: Plane | stationaryToOnRunway[p] or onRunwayToInAir[p] or inAirToOnRunway[p] or onRunwayToStationary[p] or doNothing[p]}
-    eventually {some p: Plane | onRunwayToInAir[p]}
+    always {all p: Plane | stationaryToOnRunway[p] or onRunwayToInAir[p] or inAirToOnRunway[p] or onRunwayToStationary[p] or doNothing[p]}
+    eventually {some p: Plane |  stationaryToOnRunway[p]}
+    eventually {some p: Plane |  onRunwayToInAir[p]}
+    eventually {some p: Plane |  inAirToOnRunway[p]}
+    eventually {some p: Plane |  onRunwayToStationary[p]}
+    eventually {some p: Plane |  inAir[p] and doNothing[p]}
+    eventually {some p: Plane |  onRunway[p] and doNothing[p]}
+    eventually {some p: Plane |  stationary[p] and doNothing[p]}
 }
+
+test expect validifyModel {
+    testOnePlane: {
+        init 
+        always wellFormed
+        always noCrashes
+        some p : Plane | {
+            stationaryToOnRunway[p]
+        }
+        //always {all p: Plane | stationaryToOnRunway[p] or onRunwayToInAir[p] or doNothing[p]}
+        next_state {some p : Plane | { onRunway[p]}}
+        next_state {some p : Plane | { onRunwayToInAir[p] }}
+        next_state next_state {some p: Plane | {inAir[p]}}
+        next_state next_state {some p: Plane | {doNothing[p]}}
+        eventually {some p : Plane | inAir[p] and readyToLand[p]}
+        eventually next_state {some p: Plane | inAirToOnRunway[p]}
+        eventually next_state next_state {some p: Plane | onRunwayToStationary[p]}
+        
+
+    } for exactly 1 Plane, exactly 4 Runway, exactly 3 Airport, 5 Int  is sat
+}
+
 
 run { 
     traces

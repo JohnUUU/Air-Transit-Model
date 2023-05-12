@@ -14,9 +14,9 @@ function make_plane(url) {
     img.style.height = '15%'
     img.style.display = 'block'
     img.style['margin-bottom'] = '10%'
-  
+
     return img;
-  }
+}
 
 function make_airport() {
     const div = make_plane('https://img.freepik.com/free-photo/white-texture_1160-786.jpg?w=1800&t=st=1683867094~exp=1683867694~hmac=75f16b025327b29462bfa9c028fa0d8416cba3dd6bff4b157479eed2e2256ec1')
@@ -63,5 +63,18 @@ function make_airport_runway_sky() {
 }
 
 // place the planes
+airports = Airport
+for (const ind in airports.tuples()) {
+    const airport = airports.tuples()[ind]
+    const minFlightTime = +airport.join(minFlightTime).toString()
+    console.log(minFlightTime)
+}
 
+
+// planes = Plane 
+// for (const ind in planes.tuples()) {
+//     const plane = planes.tuples()[ind]
+//     const flightTime = +plane.join(timeInFlight).toString()
+//     console.log(flightTime)
+// }
 
