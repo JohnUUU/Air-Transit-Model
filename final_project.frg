@@ -257,6 +257,9 @@ pred keepInRunway[p: Plane] {
 
 pred doNothing[p: Plane]{
     inAir[p] => {
+        -- Guard 
+        not readyToLand[p]
+        -- Transition
         keepInAir[p]
     }
     onRunway[p] => {
@@ -267,32 +270,16 @@ pred doNothing[p: Plane]{
     }
 }
 
-pred noCrashes{
-    // at most one plane in a runway
-    all r : Runway {
-        lone r.activeplanes
-    }
-}
-
-pred traces{
+pred traces {
     init
-    always wellFormed
-    always noCrashes // Ideally try to replace this with some registration system maybe? 
+    always wellFormed // Ideally try to replace this with some registration system maybe? 
     always {all p: Plane | stationaryToOnRunway[p] or onRunwayToInAir[p] or inAirToOnRunway[p] or onRunwayToStationary[p] or doNothing[p]}
-    eventually {some p: Plane |  stationaryToOnRunway[p]}
-    eventually {some p: Plane |  onRunwayToInAir[p]}
-    eventually {some p: Plane |  inAirToOnRunway[p]}
-    eventually {some p: Plane |  onRunwayToStationary[p]}
-    eventually {some p: Plane |  inAir[p] and doNothing[p]}
-    eventually {some p: Plane |  onRunway[p] and doNothing[p]}
-    eventually {some p: Plane |  stationary[p] and doNothing[p]}
 }
 
 test expect validifyModel {
     testOnePlane: {
         init 
         always wellFormed
-        always noCrashes
         some p : Plane | {
             stationaryToOnRunway[p]
         }
@@ -304,11 +291,19 @@ test expect validifyModel {
         eventually {some p : Plane | inAir[p] and readyToLand[p]}
         eventually next_state {some p: Plane | inAirToOnRunway[p]}
         eventually next_state next_state {some p: Plane | onRunwayToStationary[p]}
-        
+    } for exactly 1 Plane, exactly 4 Runway, exactly 3 Airport, 5 Int  is sat
 
+    testEveryTransitionOkay: {
+        traces
+        eventually {some p: Plane |  stationaryToOnRunway[p]}
+        eventually {some p: Plane |  onRunwayToInAir[p]}
+        eventually {some p: Plane |  inAirToOnRunway[p]}
+        eventually {some p: Plane |  onRunwayToStationary[p]}
+        eventually {some p: Plane |  inAir[p] and doNothing[p]}
+        eventually {some p: Plane |  onRunway[p] and doNothing[p]}
+        eventually {some p: Plane |  stationary[p] and doNothing[p]}
     } for exactly 1 Plane, exactly 4 Runway, exactly 3 Airport, 5 Int  is sat
 }
-
 
 run { 
     traces
