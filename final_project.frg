@@ -30,7 +30,7 @@ pred wellFormed {
         }
     }
     
-    // A Plane cannot fly to itself
+    // A Plane should not fly to itself
     all a : Airport {
         (a -> a) not in Plane.flying
     }
@@ -118,7 +118,6 @@ pred init {
 
     // Runways start with no planes 
     no Runway.activeplanes
-    no flying
 
     // Planes are in stationary mode
     all p: Plane {
@@ -161,11 +160,11 @@ pred onRunwayToInAir[p : Plane] {
     onRunway[p]
 
     -- Transition 
-    // // Plane flies from current Airport to some destination
-    // some dest: Airport |  {
-    //     p.flying' = p.location -> dest
-    // }
-    // p.timeInFlight' = 0
+    // Plane flies from current Airport to some destination
+    some dest: Airport |  {
+        p.flying' = p.location -> dest
+    }
+    p.timeInFlight' = 0
 
     // Plane leaves the runway
     p not in Runway.activeplanes'
@@ -276,11 +275,18 @@ pred noCrashes{
 
 pred traces{
     init
-    always wellFormed
-    always noCrashes // Ideally try to replace this with some registration system maybe? 
-    always {all p: Plane | stationaryToOnRunway[p] or onRunwayToInAir[p] or inAirToOnRunway[p] or onRunwayToStationary[p] or doNothing[p]}
-    eventually {some p: Plane | onRunway[p]}
-    // eventually {some p: Plane | onRunwayToInAir[p]}
+    eventually {
+        not init
+        not init => {
+            some flying
+        }
+    }
+    
+    // always wellFormed
+    // always noCrashes // Ideally try to replace this with some registration system maybe? 
+    // always {all p: Plane | stationaryToOnRunway[p] or onRunwayToInAir[p] or inAirToOnRunway[p] or onRunwayToStationary[p] or doNothing[p]}
+    // // eventually {some p: Plane | onRunway[p]}
+    // eventually {some p: Plane | stationaryToOnRunway[p]}
 }
 
 run { 
