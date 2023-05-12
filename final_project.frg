@@ -6,7 +6,7 @@ option max_tracelength 20
 sig Plane {
     var timeInFlight: lone Int, // Time that the plane has been in flight
     maxFlightTime: one Int, // Maximum amount of time that the plane can be in flight, e.g. due to fuel constraints
-    flying: lone Airport -> Airport, // Whether or not the plane is Flying and if so from what SRC to DEST
+    var flying: set Airport -> Airport, // Whether or not the plane is Flying and if so from what SRC to DEST
     var location: lone Airport // Which Airport the Plane is currently at 
 }
 
@@ -108,7 +108,7 @@ pred inAir[p: Plane]{
     no p.location
 
     // Plane is not in a runway 
-    p not in Runway.activeplanes'
+    p not in Runway.activeplanes
 }
 
 
@@ -163,7 +163,7 @@ pred onRunwayToInAir[p : Plane] {
     -- Transition 
     // Plane flies from current Airport to some destination
     some dest: Airport |  {
-        p.flying' = p.location -> dest
+        p.flying' = (p.location -> dest) 
     }
     p.timeInFlight' = 0
 
@@ -278,11 +278,10 @@ pred traces{
     init
     always wellFormed
     always noCrashes // Ideally try to replace this with some registration system maybe? 
-    always {all p: Plane | stationaryToOnRunway[p] or onRunwayToInAir[p] or inAirToOnRunway[p] or onRunwayToStationary[p] or doNothing[p]}
-    // eventually {some p: Plane | onRunway[p]}
-    eventually {some p: Plane | stationaryToOnRunway[p]}
+    //always {all p: Plane | stationaryToOnRunway[p] or onRunwayToInAir[p] or inAirToOnRunway[p] or onRunwayToStationary[p] or doNothing[p]}
+    eventually {some p: Plane | onRunwayToInAir[p]}
 }
 
 run { 
     traces
-} for exactly 6 Plane, exactly 4 Runway, exactly 2 Airport, 5 Int
+} for exactly 6 Plane, exactly 4 Runway, exactly 3 Airport, 5 Int
