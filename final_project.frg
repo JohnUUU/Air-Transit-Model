@@ -121,6 +121,7 @@ pred init {
 
     // Planes are in stationary mode
     all p: Plane {
+        // if is in the airport then it is stationary
         stationary[p]
     }
 }
@@ -275,18 +276,11 @@ pred noCrashes{
 
 pred traces{
     init
-    eventually {
-        not init
-        not init => {
-            some flying
-        }
-    }
-    
-    // always wellFormed
-    // always noCrashes // Ideally try to replace this with some registration system maybe? 
-    // always {all p: Plane | stationaryToOnRunway[p] or onRunwayToInAir[p] or inAirToOnRunway[p] or onRunwayToStationary[p] or doNothing[p]}
-    // // eventually {some p: Plane | onRunway[p]}
-    // eventually {some p: Plane | stationaryToOnRunway[p]}
+    always wellFormed
+    always noCrashes // Ideally try to replace this with some registration system maybe? 
+    always {all p: Plane | stationaryToOnRunway[p] or onRunwayToInAir[p] or inAirToOnRunway[p] or onRunwayToStationary[p] or doNothing[p]}
+    // eventually {some p: Plane | onRunway[p]}
+    eventually {some p: Plane | stationaryToOnRunway[p]}
 }
 
 run { 
