@@ -1,4 +1,5 @@
 div.replaceChildren()
+see_specific_state = -1
 
 // Defining Sigs and Fields 
 function make_state(instance, idx) {
@@ -97,8 +98,16 @@ function make_state(instance, idx) {
         runwayDiv.textContent = title
         runwayDiv.style.textAlign = 'center';
         runwayDiv.style.fontWeight = 'bold';
-        runwayDiv.style.fontSize = '24px';
-        return [runwayDiv]
+
+        var runwayPlanes = document.createElement('div');
+        runwayPlanes.style.fontSize = '24px';
+        runwayPlanes.style.display = 'grid';
+        runwayPlanes.style.gridTemplateColumns = 'repeat(3, 1fr)';
+        runwayPlanes.style.gridAutoRows = 'auto';
+        runwayPlanes.style.gridGap = '10px';
+        runwayDiv.appendChild(runwayPlanes)
+
+        return [runwayDiv, runwayPlanes]
     }
 
     const airport_plane_divs = {};
@@ -113,120 +122,55 @@ function make_state(instance, idx) {
         stateDiv.appendChild(airport_div)
     }
 
-
+    const runway_plane_divs = {}
     for (const idx in runways) {
         const runway = runways[idx]
         const airport_loc = runway.join(airport_f);
-        const [runway_div] = make_runway(runway.toString())
+        const [runway_div, runway_planes] = make_runway(runway.toString())
         if (airport_runway_divs[airport_loc.toString()]) {
+
             airport_runway_divs[airport_loc.toString()].appendChild(runway_div)
         }
+        const aplanes = runway.join(activeplanes_f)
+        for (const idx in aplanes) {
+            const aplane = aplanes[idx]
+
+            if (aplane.toString()) {
+                const [aplane_div] = make_plane(aplane.toString())
+                runway_plane_divs[aplane.toString()] = aplane_div
+                runway_planes.append(aplane_div)
+            }
+
+        }
     }
+    console.log(runway_plane_divs)
 
     for (const idx in planes) {
         const plane = planes[idx]
         const airport_loc = plane.join(location_f);
         const [plane_div] = make_plane(plane.toString())
-        if (airport_runway_divs[airport_loc.toString()]) {
+        if (airport_plane_divs[airport_loc.toString()] && !runway_plane_divs[plane.toString()]) {
             airport_plane_divs[airport_loc.toString()].appendChild(plane_div)
         }
-        console.log(plane, flying_f)
-        console.log(plane.join(flying_f))
-        const [sky_div] = make_plane(plane.toString())
-        if (airport_sky_divs[airport_loc.toString()]) {
-            airport_sky_divs[airport_loc.toString()].appendChild(sky_div)
+        for (const idx in airports) {
+            const airport = airports[idx]
+            const dest_loc = airport.join(plane.join(flying_f)).toString()
+            if (dest_loc) {
+                const [sky_div] = make_plane(plane.toString())
+                if (airport_sky_divs[dest_loc.toString()]) {
+                    airport_sky_divs[dest_loc.toString()].appendChild(sky_div)
+                }
+            }
         }
-
     }
 
     return stateDiv
 }
+
 for (const idx in instances) {
-    const my_instance = instances[idx]
-    const state_div = make_state(my_instance, idx)
-    div.appendChild(state_div)
+    if (see_specific_state == -1 || idx == see_specific_state) {
+        const my_instance = instances[idx]
+        const state_div = make_state(my_instance, idx)
+        div.appendChild(state_div)
+    }
 }
-
-
-
-
-// // combine the airport and runway horizontally
-// function make_airport_runway() {
-//     const airport = make_airport()
-//     const runway = make_runway()
-//     const div = document.createElement('div')
-//     div.style.display = 'flex'
-//     div.style.flexDirection = 'row'
-//     div.style.justifyContent = 'space-between'
-//     div.appendChild(airport)
-//     div.appendChild(runway)
-//     return div;
-// }
-
-// // combine airport_runways, sky, and aiport runway vertically
-// function make_airport_runway_sky() {
-//     const airport_runway = make_airport_runway()
-//     const sky = make_sky()
-//     const div = document.createElement('div')
-//     div.style.display = 'flex'
-//     div.style.flexDirection = 'column'
-//     div.style.justifyContent = 'space-between'
-//     div.appendChild(airport_runway)
-//     div.appendChild(sky)
-//     return div;
-// }
-
-
-
-
-
-
-// const mft = instance.field('minFlightTime')
-// for (const idx1 in airports) {
-//     for (const idx2 in airports) {
-//         const minTime = airports[idx2].join(airports[idx1].join(mft)).toString()
-//         if (minTime) {
-//             console.log(minTime)
-//         }
-//     }
-// }
-
-
-
-
-
-/// creating planes
-//const plane = "https://static.vecteezy.com/system/resources/previews/014/455/865/non_2x/plane-icon-icon-on-transparent-background-free-png.png"
-
-// function make_plane(url) {
-//     const img = document.createElement('img')
-//     img.src = url
-//     img.style.width = '100%'
-//     img.style.height = '15%'
-//     img.style.display = 'block'
-//     // img.style['margin-bottom'] = '10%'
-
-//     return img;
-// }
-
-    // // ADD PLANES
-    // const img = make_plane('https://img.freepik.com/free-photo/white-texture_1160-786.jpg?w=1800&t=st=1683867094~exp=1683867694~hmac=75f16b025327b29462bfa9c028fa0d8416cba3dd6bff4b157479eed2e2256ec1')
-    // img.style.opacity = '100%'
-    // img.style.height = '75px'
-    // airportDiv.appendChild(img)
-     // return airportDiv;
-// }
-
-
-
-// function make_runway() {
-//     const div = make_plane('https://w0.peakpx.com/wallpaper/925/1021/HD-wallpaper-black-background-blue-colors-dark-gray-green-grey-plain-solid.jpg')
-//     div.style.opacity = '0%'
-//     return div;
-// }
-
-// function make_sky() {
-//     const div = make_plane('https://www.solidbackgrounds.com/images/950x350/950x350-sky-blue-solid-color-background.jpg')
-//     div.style.opacity = '0%'
-//     return div;
-// }

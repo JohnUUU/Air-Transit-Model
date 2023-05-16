@@ -33,6 +33,9 @@ pred wellFormed {
     // A Plane should not fly to itself
     all a : Airport {
         (a -> a) not in Plane.flying
+
+        // Each airport must have at least 1 runway 
+        some airport.a
     }
     
     all minft : Airport.(Airport.minFlightTime) {
@@ -64,6 +67,9 @@ pred wellFormed {
             one a2.(a1.minFlightTime)
         }
     }
+
+    
+    
 
 }
 
@@ -255,6 +261,20 @@ pred keepInRunway[p: Plane] {
     p.location' = p.location
 }
 
+pred keepStationary[p: Plane] {
+
+    // Plane is not currently in Flight 
+    p not in flying.Airport.Airport'
+
+    // Plane is not currently in the runway 
+    p not in Runway.activeplanes'
+
+    // timeInFlight is None 
+    no p.timeInFlight'
+
+    // Plane is in an Airport 
+    p.location' = p.location
+}
 pred doNothing[p: Plane]{
     inAir[p] => {
         -- Guard 
@@ -266,7 +286,7 @@ pred doNothing[p: Plane]{
         keepInRunway[p]
     }
     stationary[p] => {
-        next_state stationary[p]
+        keepStationary[p]
     }
 }
 
