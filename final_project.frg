@@ -332,3 +332,28 @@ run {
         eventually always stationary[p]
     }
 } for exactly 4 Plane, exactly 4 Runway, exactly 3 Airport, 5 Int
+
+
+run { 
+    traces
+    eventually {
+        some p : Plane {
+            inAir[p]
+            p.timeInFlight > p.maxFlightTime
+        }
+    }
+    all p : Plane {
+        eventually inAir[p]
+        eventually always stationary[p]
+    }
+} for exactly 4 Plane, exactly 4 Runway, exactly 3 Airport, 5 Int
+
+run { 
+    traces
+    all p: Plane {
+        all a: Airport {
+            eventually p.location = a
+        }
+        eventually always stationary[p]
+    }
+} for exactly 4 Plane, exactly 4 Runway, exactly 3 Airport, 5 Int
