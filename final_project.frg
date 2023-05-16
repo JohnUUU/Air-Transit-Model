@@ -307,4 +307,11 @@ test expect validifyModel {
 
 run { 
     traces
+    eventually {some p: Plane |  stationaryToOnRunway[p]}
+    eventually {some p: Plane |  onRunwayToInAir[p]}
+    eventually {some p: Plane |  inAirToOnRunway[p]}
+    eventually {some p: Plane |  onRunwayToStationary[p]}
+    eventually {some p: Plane |  inAir[p] and doNothing[p]}
+    eventually {some p: Plane |  onRunway[p] and doNothing[p]}
+    eventually {some p: Plane |  stationary[p] and doNothing[p]}
 } for exactly 6 Plane, exactly 4 Runway, exactly 3 Airport, 5 Int
